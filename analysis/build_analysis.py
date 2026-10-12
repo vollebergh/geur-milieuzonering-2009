@@ -427,46 +427,56 @@ def write_statistics(wb, analyses, extract_checks, src_hashes):
 
 # --------------------------------------------------------------------------- figure
 
-def heatmap(ax, records, title):
+def heatmap(ax, records, title, swap=False):
+    """Count heatmap; swap=False: x = geur, y = category; swap=True: x = category, y = geur."""
     cats = [lab for _, lab in CODETABLE]
-    grid = [[0] * len(ODOUR_STEPS) for _ in cats]
+    grid = [[0] * len(ODOUR_STEPS) for _ in cats]  # grid[category][geur]
     for rec in records:
         grid[cats.index(rec["cat"])][ODOUR_STEPS.index(rec["odour"])] += 1
+    if swap:
+        grid = [list(col) for col in zip(*grid)]  # grid[geur][category]
+    # cell(i, j) -> (category index, geur index) for row i, column j
+    cell = (lambda i, j: (j, i)) if swap else (lambda i, j: (i, j))
     vmax = max(max(row) for row in grid)
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
         "seq", ["#fcfcfb", "#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"])
     ax.imshow(grid, cmap=cmap, vmin=0, vmax=vmax, origin="lower", aspect="auto")
     for i, row in enumerate(grid):
         for j, v in enumerate(row):
+            ci, gi = cell(i, j)
             if v:
                 ax.text(j, i, str(v), ha="center", va="center", fontsize=8,
                         color="#ffffff" if v > 0.45 * vmax else "#0b0b0b")
-            if ODOUR_STEPS[j] > CODETABLE[i][0]:
+            if ODOUR_STEPS[gi] > CODETABLE[ci][0]:
                 ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, hatch="///",
                                            edgecolor="#d6d5d0", linewidth=0))
     # Diagonal: odour distance equals category distance (odour is decisive).
-    for i, (dist, _) in enumerate(CODETABLE):
-        j = ODOUR_STEPS.index(dist)
-        ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False,
+    for ci, (dist, _) in enumerate(CODETABLE):
+        gi = ODOUR_STEPS.index(dist)
+        x, y = (ci, gi) if swap else (gi, ci)
+        ax.add_patch(plt.Rectangle((x - 0.5, y - 0.5), 1, 1, fill=False,
                                    edgecolor="#52514e", linewidth=1.2))
-    ax.set_xticks(range(len(ODOUR_STEPS)), [str(s) for s in ODOUR_STEPS], fontsize=8)
-    ax.set_yticks(range(len(cats)), cats, fontsize=8)
-    ax.set_xlabel("Geurafstand (m)", fontsize=9, color="#52514e")
-    ax.set_ylabel("Milieucategorie", fontsize=9, color="#52514e")
+    odour_ticks = [str(s) for s in ODOUR_STEPS]
+    xt, yt = (cats, odour_ticks) if swap else (odour_ticks, cats)
+    xl, yl = ("Milieucategorie", "Geurafstand (m)") if swap else ("Geurafstand (m)", "Milieucategorie")
+    ax.set_xticks(range(len(xt)), xt, fontsize=8)
+    ax.set_yticks(range(len(yt)), yt, fontsize=8)
+    ax.set_xlabel(xl, fontsize=9, color="#52514e")
+    ax.set_ylabel(yl, fontsize=9, color="#52514e")
     ax.set_title(title, fontsize=10, loc="left", color="#0b0b0b")
-    for s in ax.spines.values():
-        s.set_visible(False)
+    for sp in ax.spines.values():
+        sp.set_visible(False)
     ax.tick_params(length=0, colors="#52514e")
 
 
-def make_figure(datasets, analyses_by_key, path):
+def make_figure(datasets, analyses_by_key, path, swap=False):
     fig, axes = plt.subplots(1, 2, figsize=(13, 5.6), dpi=150)
     fig.patch.set_facecolor("#fcfcfb")
     for ax, key in zip(axes, ("B1", "B2")):
         st = analyses_by_key[key]
         heatmap(ax, datasets[key],
                 f"{SOURCE_TITLES[key]}\nn = {st['n']}, Spearman rho = {st['rho']:.2f}, "
-                f"Kendall tau-b = {st['tau']:.2f}")
+                f"Kendall tau-b = {st['tau']:.2f}", swap=swap)
     fig.text(0.01, 0.01,
              "Cell value = number of activities. Outlined cells: geur distance equals the category "
              "distance (geur decisive). Hatched cells are impossible by construction "
@@ -562,6 +572,11 @@ def main():
     img = XLImage(str(fig_path))
     img.width, img.height = img.width * 0.55, img.height * 0.55
     fig_ws.add_image(img, "A1")
+    fig_path_swap = FIG_DIR / "correlatiediagram_categorie_geur.png"
+    make_figure(datasets, by_key, fig_path_swap, swap=True)
+    img2 = XLImage(str(fig_path_swap))
+    img2.width, img2.height = img2.width * 0.55, img2.height * 0.55
+    fig_ws.add_image(img2, "A42")
 
     # Sensitivity: orphan rows in B1.
     ox = [to_num(r["odour_raw"]) for r in orphans]
@@ -578,7 +593,7 @@ def main():
         ("", False),
         ("Sheets", True),
         ("Statistics - correlation coefficients (formula and Python, cross-checked) and source verification summary.", False),
-        ("Figure - correlation diagram (count heatmaps of geur distance x category), also in analysis/figures/.", False),
+        ("Figure - correlation diagrams (count heatmaps): geur on x / category on y, and below it the same with axes reversed; also in analysis/figures/.", False),
         ("Data_B1, Data_B2, Data_B1_union_B2 - FINAL datasets: values only, one row per activity with a numeric geur distance and a category. Columns N-R are rank formulas used by 'Statistics'.", False),
         ("B1_extract, B2_extract - INTERMEDIATE: every non-empty source row with raw values, the original formula/content of O and R, the cached (displayed) values, and recalculation checks.", False),
         ("Codetabel - distance-to-category lookup with ordinal ranks.", False),
@@ -591,7 +606,8 @@ def main():
         ("Geur = column E in both sources. Categorie = column R ('CATEGORIE') in both sources. In bijlage 1 column N is empty; R is the 14th visible column because L, M, N and P are hidden.", False),
         ("", False),
         ("Sensitivity analysis not in the dataset sheets", True),
-        (f"Bijlage 1 rows 763-837 carry only a geur value and a hardcoded category, without activity description or other distances; they are excluded. "
+        (f"Bijlage 1 rows 763-837 are, according to the owner of the file, a targeted cut-and-paste of columns E and R from an updated version of bijlage 1 that was published on the VNG website for the former guideline and can no longer be found. "
+         f"They carry only a geur value and a hardcoded category, without activity description or other distances, cannot be linked to an activity and are therefore excluded. "
          f"Rows with numeric geur and category: n = {orphan_st['n']}, Spearman rho = {orphan_st['rho']:.3f} (p = {orphan_st['p_rho']:.2g}). "
          f"Bijlage 1 including these rows: n = {b1o_st['n']}, Spearman rho = {b1o_st['rho']:.3f}.", False),
     ]

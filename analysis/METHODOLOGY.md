@@ -35,7 +35,7 @@ Deviations from the pattern, all preserved and checked:
 - B1 has 15 included rows, and B2 has 7, where R is a hardcoded value rather than a formula. Examples are B1 rows 430, 454, 465 and 472–474 (wind turbines) and 618 (helipads).
 - Some rows have O hardcoded or written as `MAX(E:J)`, or have distances stored as text (`'0'`, `'10'`).
 - B2 rows 423–424 look up the category through an external link (`[1]codetabel`). The cached values are used.
-- B1 rows 763–837 have no SBI code, description, or other distances. They contain only a geur value (sometimes `-`) and a hardcoded category. See step 3.
+- B1 rows 763–837 have no SBI code, description, or other distances. They contain only a geur value (sometimes `-`) and a hardcoded category. According to the owner of the file, they are a targeted cut-and-paste of columns E and R from an updated version of bijlage 1. That version was published on the VNG website for the former guideline and can no longer be found. See step 3.
 
 ## Processing steps
 
@@ -79,7 +79,12 @@ A row is included if it has (a) an activity description, (b) a numeric odour dis
 | no activity description | 116 | 35 |
 | **included** | **559** | **315** |
 
-B1 rows 763–837 are excluded because they lack a description and the other three distances. Without those, their category cannot be verified, and in several rows it cannot follow from the geur value at all, e.g. geur 0 m with category 6. They are reported separately as a sensitivity analysis (README sheet and `FINDINGS.md`).
+B1 rows 763–837 come from the updated version of bijlage 1 (see above). They are excluded because they cannot be linked to an activity:
+
+- They have no SBI code, description, or stof/geluid/gevaar distances, so their category cannot be verified. In several rows the category cannot follow from the geur value alone, e.g. geur 0 m with category 6, which is consistent with the category being set by another factor in the updated list.
+- The block of 75 rows contains 11 empty rows, which are probably section headers in the updated list. I compared the pattern of empty rows and of the E and R values against every 75-row window of the main table. No window matches: the best window agrees on 60 of 75 row types and on only 12 categories. So the block is not an updated copy of a contiguous part of the 2009 table, and the rows cannot be assigned to activities from that table.
+
+They are reported separately as a sensitivity analysis (README sheet and `FINDINGS.md`). If the updated version is found, they can be added as a separate dataset.
 
 ### 4. Final datasets (values only)
 
@@ -109,9 +114,12 @@ Seven analyses are run:
 
 **Permutation baseline** (analyses 1, 4 and 7). The script shuffles odour distances across activities, rebuilds the category as max(shuffled odour, other distances), and computes ρ. This is repeated 1000 times with seed 1. The mean is the correlation that the `MAX` construction alone produces if odour were unrelated to the other nuisances.
 
-### 6. Correlation diagram
+### 6. Correlation diagrams
 
-`analysis/figures/correlatiediagram_geur_categorie.png`, also embedded on the `Figure` sheet, shows count heatmaps of category × odour distance. Both variables are discrete, so a scatter plot would hide thousands of overlapping points. A count heatmap shows the joint distribution directly.
+Two count heatmaps of category × odour distance, both also embedded on the `Figure` sheet:
+
+- `analysis/figures/correlatiediagram_geur_categorie.png`: odour distance on the x-axis, category on the y-axis.
+- `analysis/figures/correlatiediagram_categorie_geur.png`: the same data with the axes reversed, i.e. category on the x-axis and odour distance on the y-axis. Both variables are discrete, so a scatter plot would hide thousands of overlapping points. A count heatmap shows the joint distribution directly.
 
 - Outlined cells: odour distance = category distance (odour is decisive).
 - Hatched cells: impossible by construction.

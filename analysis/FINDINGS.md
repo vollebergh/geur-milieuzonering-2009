@@ -1,6 +1,6 @@
 # Findings: odour distance vs. environmental category
 
-Data: `analysis/geur_categorie_analyse.xlsx`. Method: `METHODOLOGY.md`. Figure: `figures/correlatiediagram_geur_categorie.png`.
+Data: `analysis/geur_categorie_analyse.xlsx`. Method: `METHODOLOGY.md`. Figures: `figures/correlatiediagram_geur_categorie.png` (odour on the x-axis) and `figures/correlatiediagram_categorie_geur.png` (axes reversed).
 
 ## Summary
 
@@ -54,7 +54,7 @@ In B2, odour is decisive in 117 of 315 activities (37%). B2 contains no activiti
 - **This is not a sample.** The lists are the full catalogue of the VNG guideline. The p-values are therefore not inference to a population. ρ and τ-b are best read as descriptive measures of the catalogue's internal structure.
 - **B2 is not independent of B1.** 312 of the 315 B2 activities appear in B1 with identical values. The two results confirm each other, but they are not independent replications.
 - **Ties.** Both variables have few distinct values: 11 odour steps and 10 categories. τ-b and mid-rank ρ correct for ties. Even so, the CI and p-values remain approximations.
-- **Excluded rows in B1.** Rows 763–837 contain only an odour value and a hardcoded category, with no description and no other distances. They cannot be verified and are excluded. Sensitivity check: those 47 rows alone give ρ = 0.33 (p = 0.02); B1 including them gives n = 606 and ρ = 0.61. The conclusion does not change.
+- **Excluded rows in B1.** Rows 763–837 are a targeted cut-and-paste of columns E and R from an updated version of bijlage 1. That version was published on the VNG website for the former guideline and can no longer be found. The rows have no description and no other distances, so they cannot be linked to an activity or verified, and they are excluded. They do not match any contiguous part of the 2009 table. Sensitivity check: those 47 rows alone give ρ = 0.33 (p = 0.02); B1 including them gives n = 606 and ρ = 0.61. The conclusion does not change.
 - **Hardcoded categories** (15 in B1, 7 in B2) all match the category recomputed from the distances. Cached O and R values match recalculation for every included row.
 
 ## References
