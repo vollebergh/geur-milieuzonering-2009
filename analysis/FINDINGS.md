@@ -12,6 +12,33 @@ Data: `analysis/geur_categorie_analyse.xlsx`. Method: `METHODOLOGY.md`. Figures 
 3. Beyond the built-in part, there is a real co-variation. The odour distance correlates with the category that the other three factors alone would produce: ρ = 0.47 (B1) and 0.39 (B2). Activities with large odour distances also tend to have large dust, noise or hazard distances.
 4. In practice, the category gives a firm **upper bound** on the odour distance, but a poor estimate of it. Within one category, odour distances range from 0 m up to the category distance. Odour determines the category in only about a third of activities.
 
+## Answering the research question
+
+**Question:** does a higher environmental category lead to a larger odour distance, and how do the two correlate?
+
+**Calculation.** Spearman's rank correlation coefficient (ρ). Both variables are ordinal: the category, and the odour distance, which is a ladder of 11 fixed steps. ρ measures whether a higher category goes with a higher odour distance (a monotonic association) and assumes neither equal spacing nor normality. Pearson's r is therefore not suitable as the primary measure.
+
+**The two numbers (bijlage 1, n = 559):**
+
+- **ρ = 0.62** (95% CI 0.55–0.68): the direction and strength of the association.
+- **p < 10⁻⁵⁹**: the probability of a ρ at least this large if there were no association at all.
+
+Bijlage 2 gives ρ = 0.61, p < 10⁻³². Kendall's τ-b (0.52 and 0.53) is a robustness check on ρ, not a third key number.
+
+**What the numbers say:**
+
+- **Direction and strength.** ρ is positive: the higher the category, the larger the odour distance tends to be. A value of 0.62 is moderate to strong. Common cut-offs put 0.40–0.69 at moderate and 0.70 and up at strong (Schober et al., 2018). ρ² ≈ 0.38, so about 38% of the variation in ranks is shared.
+- **The p-value.** It rules out chance, but has limited meaning here. The list is the complete VNG catalogue, not a sample, so ρ itself is the main result.
+
+**"Leads to" cannot be answered this way.** There are two reasons:
+
+1. A correlation does not establish cause and effect.
+2. In this data the cause runs the other way, by construction. The category is calculated from the largest of four distances, odour among them, so a large odour distance produces a high category, not the reverse.
+
+Part of ρ = 0.62 comes from that calculation alone; the permutation baseline puts it at about 0.39. The remainder is real co-variation: odour also correlates with the category based on stof, geluid and gevaar alone (ρ = 0.47).
+
+**Suggested wording:** "Higher categories are associated with larger odour distances (Spearman ρ = 0.62). This is partly because odour helps determine the category, and partly because activities with a lot of odour nuisance also score high on other nuisances."
+
 ## Core results
 
 | # | Analysis | n | Spearman ρ (95% CI) | Kendall τ-b | Baseline ρ from `MAX` alone (95% range) |
@@ -81,5 +108,6 @@ Reading:
 
 - VNG (2009). *Bedrijven en milieuzonering*. Den Haag: VNG uitgeverij.
 - Agresti, A. (2010). *Analysis of Ordinal Categorical Data* (2nd ed.). Wiley.
+- Schober, P., Boer, C., & Schwarte, L. A. (2018). Correlation coefficients: appropriate use and interpretation. *Anesthesia & Analgesia*, 126(5), 1763–1768. https://doi.org/10.1213/ANE.0000000000002864
 - Kendall, M. G. (1945). The treatment of ties in ranking problems. *Biometrika*, 33(3), 239–251.
 - Efron, B., & Tibshirani, R. J. (1993). *An Introduction to the Bootstrap*. Chapman & Hall.
