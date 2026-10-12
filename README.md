@@ -23,6 +23,12 @@ De bestanden komen van de [VNG-publicatiepagina](https://vng.nl/publicaties/hand
 
 **Waarom het verband deels ingebouwd is.** De categorie is de grootste van vier afstanden: geur, stof, geluid en gevaar. Daardoor is een hoge categorie een gevolg van een grote geurafstand, en niet andersom. De categorie geeft een bovengrens voor de geurafstand, maar is er een slechte schatter van.
 
+## Bubbelgrafiek
+
+![Bubbelgrafiek: milieucategorie (x) tegen geurafstand (y), met regressielijn](analysis/figures/bubbel_categorie_geur.png)
+
+Milieucategorie op de x-as, geurafstand op de y-as. Het oppervlak van een cirkel staat voor het aantal activiteiten. De lijn is een kleinste-kwadratenregressie op de stapposities van beide assen. Gearceerde vakken zijn onmogelijk: de geurafstand kan niet groter zijn dan de afstand die bij de categorie hoort.
+
 ## Meer informatie
 
 - [`analysis/METHODOLOGY.md`](analysis/METHODOLOGY.md): methode en bewerkingen.
