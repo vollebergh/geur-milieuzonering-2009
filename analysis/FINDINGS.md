@@ -1,6 +1,9 @@
 # Findings: odour distance vs. environmental category
 
-Data: `analysis/geur_categorie_analyse.xlsx`. Method: `METHODOLOGY.md`. Figures: `figures/correlatiediagram_geur_categorie.png` (odour on the x-axis) and `figures/correlatiediagram_categorie_geur.png` (axes reversed).
+Data: `analysis/geur_categorie_analyse.xlsx`. Method: `METHODOLOGY.md`. Figures (all in `figures/`, also on the `Figure` sheet):
+
+- count heatmaps: `correlatiediagram_geur_categorie.png` (odour on the x-axis) and `correlatiediagram_categorie_geur.png` (axes reversed);
+- bubble diagrams with regression line: `bubbel_geur_categorie.png` (odour on the x-axis) and `bubbel_categorie_geur.png` (axes reversed).
 
 ## Summary
 
@@ -44,10 +47,27 @@ In B2, odour is decisive in 117 of 315 activities (37%). B2 contains no activiti
 ## Interpretation
 
 - **Direction and strength.** Higher categories go with larger odour distances. The mean rises from about 1 m in category 1 to about 400 m in category 6. The ordering is not strict at the top: categories 4.2 and 5.1, and 5.2 and 5.3, have nearly equal means.
-- **Built-in part.** Because the category is a maximum, the upper-left half of the diagram is necessarily empty, which by itself produces a positive correlation. The permutation baseline (ρ ≈ 0.39–0.46) estimates the size of that effect. The observed ρ of about 0.61–0.62 lies above the baseline's 95% range in both lists.
+- **Built-in part.** Because the category is a maximum, one triangle of the diagram (hatched) is necessarily empty, which by itself produces a positive correlation. The permutation baseline (ρ ≈ 0.39–0.46) estimates the size of that effect. The observed ρ of about 0.61–0.62 lies above the baseline's 95% range in both lists.
 - **Substantive part.** Analyses 3 and 6 are free of this coupling. They show a moderate positive correlation between odour and the category from stof, geluid and gevaar. This reflects how the activity types are composed (e.g. food industry, waste processing and chemistry are high on several factors at once). It is not an arithmetic effect.
 - **Subset where odour is not decisive (analyses 2 and 5).** ρ stays at about 0.56–0.64. This subset still carries a truncation effect, because odour < category distance, so it cannot be read as a clean "independent" correlation. Analyses 3 and 6 are the cleaner test.
-- **Heterogeneity.** Odour determines the category mainly in the middle range (3.1–4.2). From 5.1 upward, it is mostly another factor, usually noise or hazard: in B1, odour is decisive in 24 of the 95 activities in categories 5.1–6. Odour distances above 300 m are rare (24 activities in B1).
+- **Heterogeneity.** Odour determines the category mainly in the middle range (3.1–4.2). From 5.1 upward, it is mostly another factor (stof, geluid or gevaar): in B1, odour is decisive in 24 of the 95 activities in categories 5.1–6. Odour distances above 300 m are rare (24 activities in B1).
+
+## Regression lines (bubble diagrams)
+
+Ordinary least squares on the step positions of both axes: odour 0, 10, 30, … 1500 m = steps 0–10; category 1, 2, 3.1, … 6 = steps 0–9. Each activity counts once. Values are on the `Regression` sheet, as live formulas cross-checked against Python.
+
+| Dataset | Regression | Intercept | Slope (SE) | R² |
+|---|---|---|---|---|
+| B1 | category step on odour step | 1.82 | 0.60 (0.035) | 0.36 |
+| B1 | odour step on category step | 0.60 | 0.59 (0.034) | 0.36 |
+| B2 | category step on odour step | 1.98 | 0.47 (0.035) | 0.37 |
+| B2 | odour step on category step | 0.26 | 0.78 (0.058) | 0.37 |
+
+Reading:
+
+- In B1, one odour step up (e.g. 30 → 50 m) goes with about 0.6 category step up, and vice versa. The line explains about 36% of the variance in step position (r ≈ 0.60 on the step scale, close to Spearman ρ = 0.62).
+- The two lines per dataset are not each other's inverse; this is regression to the mean, and the reason both orientations are shown. In B2 the slopes differ more, because B2 has no activities in categories 5.1–5.3.
+- The line is descriptive only. It treats the steps as equally spaced, which they are not in metres. It also ignores the built-in constraint (odour ≤ category distance): in the odour-on-x diagram the B1 line runs into the impossible region beyond 700 m. The rank correlations above remain the primary measure; the regression line shows the trend visually.
 
 ## Caveats
 

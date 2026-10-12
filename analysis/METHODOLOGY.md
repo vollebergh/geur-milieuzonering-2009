@@ -116,7 +116,9 @@ Seven analyses are run:
 
 ### 6. Correlation diagrams
 
-Two count heatmaps of category × odour distance, both also embedded on the `Figure` sheet:
+Two kinds of diagram, each in two orientations, all also embedded on the `Figure` sheet.
+
+**Count heatmaps.** Two count heatmaps of category × odour distance, both also embedded on the `Figure` sheet:
 
 - `analysis/figures/correlatiediagram_geur_categorie.png`: odour distance on the x-axis, category on the y-axis.
 - `analysis/figures/correlatiediagram_categorie_geur.png`: the same data with the axes reversed, i.e. category on the x-axis and odour distance on the y-axis. Both variables are discrete, so a scatter plot would hide thousands of overlapping points. A count heatmap shows the joint distribution directly.
@@ -125,6 +127,10 @@ Two count heatmaps of category × odour distance, both also embedded on the `Fig
 - Hatched cells: impossible by construction.
 
 `Crosstab_B1` and `Crosstab_B2` contain the underlying counts as `COUNTIFS` formulas, with a check that the totals equal n.
+
+**Bubble diagrams with regression line.** `bubbel_geur_categorie.png` (odour on the x-axis) and `bubbel_categorie_geur.png` (axes reversed) show one circle per combination of odour distance and category. Circle area is proportional to the number of activities; counts of 10 or more are printed in the circle. Hatched cells are impossible by construction.
+
+The regression line is ordinary least squares (`scipy.stats.linregress`) on the step positions of both axes: odour steps 0–10 for 0, 10, 30, … 1500 m, and category steps 0–9 for 1, 2, 3.1, … 6. Each activity is one observation, so the fit is implicitly weighted by the circle sizes. The step positions are on the dataset sheets as formulas (columns S and T; the odour steps come from `Codetabel` G:H). The `Regression` sheet recomputes slope, intercept and R² with `SLOPE`, `INTERCEPT` and `RSQ` and checks them against Python. Steps rather than metres are used because the axes are drawn on the step scale; a fit in metres would plot as a curve and be dominated by the few activities at 700–1500 m.
 
 ## Workbook conventions
 

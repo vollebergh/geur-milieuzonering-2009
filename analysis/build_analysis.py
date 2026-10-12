@@ -227,6 +227,7 @@ DATA_HEADERS = [
     # formulas
     "Midrank geur", "Midrank category", "Midrank geur (not decisive)",
     "Midrank category (not decisive)", "Midrank category excl. geur",
+    "Geur step index (0-10)", "Category step index (0-9)",
 ]
 
 
@@ -247,12 +248,14 @@ def write_dataset(wb, name, records):
         ws[f"Q{i}"] = (f'=IF(J{i}=FALSE,COUNTIFS({J},FALSE,{H},"<"&H{i})'
                        f'+(COUNTIFS({J},FALSE,{H},H{i})+1)/2,"")')
         ws[f"R{i}"] = f'=COUNTIF({L},"<"&L{i})+(COUNTIF({L},L{i})+1)/2'
+        ws[f"S{i}"] = f'=MATCH(F{i},Codetabel!$G$2:$G$12,0)-1'
+        ws[f"T{i}"] = f'=H{i}-1'
     for r in ws.iter_rows(min_row=2):
         for cell in r:
             cell.font = INPUT_FONT if cell.column <= 13 else FORMULA_FONT
-    set_widths(ws, [7, 8, 10, 12, 50, 8, 9, 9, 10, 9, 11, 11, 9, 9, 9, 11, 11, 11])
+    set_widths(ws, [7, 8, 10, 12, 50, 8, 9, 9, 10, 9, 11, 11, 9, 9, 9, 11, 11, 11, 10, 10])
     ws.freeze_panes = "F2"
-    ws.auto_filter.ref = f"A1:R{last}"
+    ws.auto_filter.ref = f"A1:T{last}"
     return last
 
 
@@ -265,7 +268,15 @@ def write_codetable(wb):
     ws["E1"] = "Source: sheet 'codetabel' in both source workbooks (identical; verified by build_analysis.py)."
     ws["E2"] = "Category labels stored as text; rank 1-10 is the ordinal position used in the rank correlations."
     ws["E3"] = "Rank 0 (only in 'Category rank excl. geur') means all non-odour distances are 0 m."
-    set_widths(ws, [13, 10, 12, 2, 90])
+    ws["G1"] = "Geur steps (m)"
+    ws["H1"] = "Step index"
+    for k, step in enumerate(ODOUR_STEPS):
+        ws.cell(row=2 + k, column=7, value=step)
+        ws.cell(row=2 + k, column=8, value=k)
+    ws["E5"] = "G:H = the 11 distinct geur distances and their step index, used for the regression lines (sheet 'Regression')."
+    set_widths(ws, [13, 10, 12, 2, 70, 2, 14, 10])
+    style_header(ws, 1, 3)
+    ws["G1"].font = ws["H1"].font = Font(name=FONT, bold=True)
 
 
 def write_crosstab(wb, name, data_sheet, last, title):
@@ -487,6 +498,121 @@ def make_figure(datasets, analyses_by_key, path, swap=False):
     plt.close(fig)
 
 
+def step_regression(records, swap):
+    """OLS on step indices. swap=False: x = geur step, y = category step; True: reversed."""
+    g = [ODOUR_STEPS.index(r["odour"]) for r in records]
+    c = [r["cat_rank"] - 1 for r in records]
+    x, y = (c, g) if swap else (g, c)
+    return stats.linregress(x, y)
+
+
+def bubble(ax, records, title, swap=False):
+    cats = [lab for _, lab in CODETABLE]
+    counts = {}
+    for rec in records:
+        k = (ODOUR_STEPS.index(rec["odour"]), cats.index(rec["cat"]))
+        counts[k] = counts.get(k, 0) + 1
+    # Impossible region (geur > category distance), lightly hatched.
+    for gi, step in enumerate(ODOUR_STEPS):
+        for ci, (dist, _) in enumerate(CODETABLE):
+            if step > dist:
+                x, y = (ci, gi) if swap else (gi, ci)
+                ax.add_patch(plt.Rectangle((x - 0.5, y - 0.5), 1, 1, fill=False, hatch="///",
+                                           edgecolor="#e4e3de", linewidth=0, zorder=0))
+    scale = 18  # marker area (pt^2) per activity
+    xs, ys, ss, ns = [], [], [], []
+    for (gi, ci), n in counts.items():
+        x, y = (ci, gi) if swap else (gi, ci)
+        xs.append(x); ys.append(y); ss.append(n * scale); ns.append(n)
+    ax.scatter(xs, ys, s=ss, color="#3987e5", alpha=0.75, edgecolors="#fcfcfb",
+               linewidths=1.5, zorder=2)
+    for x, y, n in zip(xs, ys, ns):
+        if n >= 10:
+            ax.text(x, y, str(n), ha="center", va="center", fontsize=7, color="#ffffff", zorder=3)
+    reg = step_regression(records, swap)
+    nx = len(cats) if swap else len(ODOUR_STEPS)
+    lx = [-0.5, nx - 0.5]
+    ax.plot(lx, [reg.intercept + reg.slope * v for v in lx], color="#0b0b0b", linewidth=2,
+            zorder=4, label=f"OLS: y = {reg.intercept:.2f} + {reg.slope:.2f}x  (R\u00b2 = {reg.rvalue ** 2:.2f})")
+    odour_ticks = [str(v) for v in ODOUR_STEPS]
+    xt, yt = (cats, odour_ticks) if swap else (odour_ticks, cats)
+    xl, yl = ("Milieucategorie", "Geurafstand (m)") if swap else ("Geurafstand (m)", "Milieucategorie")
+    ax.set_xticks(range(len(xt)), xt, fontsize=8)
+    ax.set_yticks(range(len(yt)), yt, fontsize=8)
+    ax.set_xlim(-0.5, len(xt) - 0.5)
+    ax.set_ylim(-0.5, len(yt) - 0.5)
+    ax.set_xlabel(xl, fontsize=9, color="#52514e")
+    ax.set_ylabel(yl, fontsize=9, color="#52514e")
+    ax.set_title(title, fontsize=10, loc="left", color="#0b0b0b")
+    ax.grid(color="#ecebe7", linewidth=0.6, zorder=0)
+    ax.set_axisbelow(True)
+    for sp in ax.spines.values():
+        sp.set_visible(False)
+    ax.tick_params(length=0, colors="#52514e")
+    # Size key + regression line in one legend.
+    handles = [ax.scatter([], [], s=n * scale, color="#3987e5", alpha=0.75, edgecolors="#fcfcfb",
+                          label=f"{n} activities") for n in (5, 20, 40)]
+    line = ax.get_lines()[0]
+    ax.legend(handles=handles + [line], loc="upper center", bbox_to_anchor=(0.5, -0.11),
+              ncol=4, fontsize=8, frameon=False, columnspacing=1.6, handletextpad=0.6)
+    return reg
+
+
+def make_bubble_figure(datasets, analyses_by_key, path, swap=False):
+    fig, axes = plt.subplots(1, 2, figsize=(13, 6.8), dpi=150)
+    fig.patch.set_facecolor("#fcfcfb")
+    for ax, key in zip(axes, ("B1", "B2")):
+        st = analyses_by_key[key]
+        bubble(ax, datasets[key],
+               f"{SOURCE_TITLES[key]}\nn = {st['n']}, Spearman rho = {st['rho']:.2f}", swap=swap)
+    fig.text(0.01, 0.01,
+             "Circle area is proportional to the number of activities (counts >= 10 printed). "
+             "Regression line: ordinary least squares on the step positions of both axes\n"
+             "(geur steps 0-10, categories 0-9), each activity weighted equally. "
+             "Hatched cells are impossible by construction.",
+             fontsize=8, color="#52514e")
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    fig.savefig(path, facecolor=fig.get_facecolor())
+    plt.close(fig)
+
+
+def write_regression(wb, datasets, lasts, data_sheets):
+    ws = wb.create_sheet("Regression", 3)
+    ws["A1"] = "Regression lines in the bubble diagrams (OLS on step positions)"
+    ws["A1"].font = Font(name=FONT, bold=True, size=12)
+    ws["A2"] = ("x and y are step positions, not metres: geur 0, 10, 30, ... 1500 m = steps 0-10; "
+                "category 1 ... 6 = steps 0-9 (columns S and T on the dataset sheets). "
+                "Black = live formula (SLOPE/INTERCEPT/RSQ); blue = scipy.stats.linregress.")
+    hdr = ["Dataset", "x", "y", "n", "Slope (formula)", "Intercept (formula)", "R\u00b2 (formula)",
+           "Slope (Python)", "Intercept (Python)", "R\u00b2 (Python)", "SE slope (Python)",
+           "p slope (Python)", "Check"]
+    for c, h in enumerate(hdr, start=1):
+        ws.cell(row=4, column=c, value=h)
+    style_header(ws, 4, len(hdr))
+    r = 5
+    for key in ("B1", "B2"):
+        sh, last = data_sheets[key], lasts[key]
+        g, c = f"'{sh}'!S2:S{last}", f"'{sh}'!T2:T{last}"
+        for swap in (False, True):
+            reg = step_regression(datasets[key], swap)
+            xr, yr = (c, g) if swap else (g, c)
+            vals = [key, "category step" if swap else "geur step", "geur step" if swap else "category step",
+                    f"=COUNT({xr})", f"=SLOPE({yr},{xr})", f"=INTERCEPT({yr},{xr})", f"=RSQ({yr},{xr})",
+                    round(reg.slope, 6), round(reg.intercept, 6), round(reg.rvalue ** 2, 6),
+                    round(reg.stderr, 6), float(f"{reg.pvalue:.3g}"),
+                    f'=IF(AND(ABS(E{r}-H{r})<0.0001,ABS(F{r}-I{r})<0.0001),"OK","MISMATCH")']
+            for ci, v in enumerate(vals, start=1):
+                cell = ws.cell(row=r, column=ci, value=v)
+                cell.font = INPUT_FONT if 8 <= ci <= 12 else FORMULA_FONT
+                if 5 <= ci <= 11:
+                    cell.number_format = "0.000"
+                if ci == 12:
+                    cell.number_format = "0.0E+00"
+            ws.cell(row=r, column=13).fill = CHECK_FILL
+            r += 1
+    set_widths(ws, [9, 15, 15, 7, 11, 11, 10, 11, 11, 10, 11, 11, 9])
+
+
 # --------------------------------------------------------------------------- main
 
 def main():
@@ -577,6 +703,14 @@ def main():
     img2 = XLImage(str(fig_path_swap))
     img2.width, img2.height = img2.width * 0.55, img2.height * 0.55
     fig_ws.add_image(img2, "A42")
+    for k, (name, swap) in enumerate((("bubbel_geur_categorie.png", False),
+                                      ("bubbel_categorie_geur.png", True))):
+        bp = FIG_DIR / name
+        make_bubble_figure(datasets, by_key, bp, swap=swap)
+        im = XLImage(str(bp))
+        im.width, im.height = im.width * 0.55, im.height * 0.55
+        fig_ws.add_image(im, f"A{83 + 44 * k}")
+    write_regression(wb, datasets, lasts, data_sheets)
 
     # Sensitivity: orphan rows in B1.
     ox = [to_num(r["odour_raw"]) for r in orphans]
@@ -593,8 +727,9 @@ def main():
         ("", False),
         ("Sheets", True),
         ("Statistics - correlation coefficients (formula and Python, cross-checked) and source verification summary.", False),
-        ("Figure - correlation diagrams (count heatmaps): geur on x / category on y, and below it the same with axes reversed; also in analysis/figures/.", False),
-        ("Data_B1, Data_B2, Data_B1_union_B2 - FINAL datasets: values only, one row per activity with a numeric geur distance and a category. Columns N-R are rank formulas used by 'Statistics'.", False),
+        ("Figure - correlation diagrams, also in analysis/figures/: count heatmaps (geur on x, then axes reversed) and bubble diagrams with regression line (geur on x, then axes reversed).", False),
+        ("Regression - slope, intercept and R2 of the regression lines in the bubble diagrams (formula and Python, cross-checked).", False),
+        ("Data_B1, Data_B2, Data_B1_union_B2 - FINAL datasets: values only, one row per activity with a numeric geur distance and a category. Columns N-R are rank formulas used by 'Statistics'; S-T are step indices used by 'Regression'.", False),
         ("B1_extract, B2_extract - INTERMEDIATE: every non-empty source row with raw values, the original formula/content of O and R, the cached (displayed) values, and recalculation checks.", False),
         ("Codetabel - distance-to-category lookup with ordinal ranks.", False),
         ("Crosstab_B1, Crosstab_B2 - frequency tables (COUNTIFS) behind the figure.", False),
